@@ -26,8 +26,8 @@ def make_example_chart() -> alt.Chart:
         y=alt.Y("count:Q", title="Sends"),
     ).properties(
         title="Example: Sends by Grade",
-        width=400,
-        height=250,
+        width=1000,
+        height=600,
     )
 
     return chart
