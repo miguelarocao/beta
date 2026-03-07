@@ -33,7 +33,7 @@ def make_example_chart() -> alt.Chart:
     return chart
 
 
-def cmd_check() -> int:
+def cmd_check(_args: argparse.Namespace) -> int:
     """Run setup check - display example chart."""
     print("BETA setup check")
     print("-" * 40)
@@ -48,23 +48,54 @@ def cmd_check() -> int:
     return 0
 
 
+def cmd_import(args: argparse.Namespace) -> int:
+    """Import data from Google Sheets."""
+    from beta.import_sheets import import_all, HeaderMismatchError
+
+    if not args.yes:
+        print("This will replace all existing data in the database.")
+        response = input("Continue? [y/N] ").strip().lower()
+        if response != "y":
+            print("Aborted.")
+            return 0
+
+    print("Importing from Google Sheets...")
+    try:
+        counts = import_all()
+    except EnvironmentError as e:
+        print(f"Error: {e}")
+        return 1
+    except HeaderMismatchError as e:
+        print(f"Header validation failed: {e}")
+        return 1
+
+    print("Import complete:")
+    for table, count in counts.items():
+        print(f"  {table}: {count} rows")
+    return 0
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(
         prog="beta",
         description="CLI agent for climbing data queries and visualizations",
     )
-    parser.add_argument(
-        "--check",
-        action="store_true",
-        help="Verify setup by displaying an example chart",
-    )
+    subparsers = parser.add_subparsers(dest="command")
+
+    # beta check
+    check_parser = subparsers.add_parser("check", help="Verify setup by displaying an example chart")
+    check_parser.set_defaults(func=cmd_check)
+
+    # beta import
+    import_parser = subparsers.add_parser("import", help="Import data from Google Sheets")
+    import_parser.add_argument("-y", "--yes", action="store_true", help="Skip confirmation prompt")
+    import_parser.set_defaults(func=cmd_import)
 
     args = parser.parse_args()
 
-    if args.check:
-        return cmd_check()
+    if hasattr(args, "func"):
+        return args.func(args)
 
-    # Default: show help for now
     parser.print_help()
     return 0
 
