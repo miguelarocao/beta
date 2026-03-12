@@ -8,6 +8,7 @@ dependencies = [
     "anthropic>=0.40",
     "google-auth>=2.0",
     "gspread>=6.0",
+    "prompt-toolkit>=3.0.52",
     "vl-convert-python>=1.0",
 ]
 

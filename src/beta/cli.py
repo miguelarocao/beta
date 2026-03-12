@@ -75,6 +75,13 @@ def cmd_import(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_chat(_args: argparse.Namespace) -> int:
+    """Start interactive chat session."""
+    from beta.repl import run_repl
+    run_repl()
+    return 0
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(
         prog="beta",
@@ -91,13 +98,17 @@ def main() -> int:
     import_parser.add_argument("-y", "--yes", action="store_true", help="Skip confirmation prompt")
     import_parser.set_defaults(func=cmd_import)
 
+    # beta chat (or just 'beta' with no args)
+    chat_parser = subparsers.add_parser("chat", help="Start interactive chat session")
+    chat_parser.set_defaults(func=cmd_chat)
+
     args = parser.parse_args()
 
     if hasattr(args, "func"):
         return args.func(args)
 
-    parser.print_help()
-    return 0
+    # Default to chat if no command given
+    return cmd_chat(args)
 
 
 if __name__ == "__main__":

@@ -1,0 +1,55 @@
+"""Interactive REPL for BETA."""
+
+from prompt_toolkit import prompt
+from prompt_toolkit.history import FileHistory
+from pathlib import Path
+
+from beta.agent import run_agent_turn
+
+HISTORY_FILE = Path.home() / ".beta_history"
+
+WELCOME = """
+BETA - Better Exploration of Training Analytics
+Type your questions about climbing data. Commands: exit, quit, or Ctrl+C/Ctrl+D to leave.
+"""
+
+
+def run_repl() -> None:
+    """Run the interactive REPL loop."""
+    print(WELCOME)
+
+    # Conversation history persists across turns
+    messages: list[dict] = []
+
+    # Command history persists across sessions
+    history = FileHistory(str(HISTORY_FILE))
+
+    while True:
+        try:
+            user_input = prompt("β ", history=history).strip()
+        except (KeyboardInterrupt, EOFError):
+            # Ctrl+C or Ctrl+D
+            print("\nGoodbye!")
+            break
+
+        if not user_input:
+            continue
+
+        if user_input.lower() in ("exit", "quit"):
+            print("Goodbye!")
+            break
+
+        # Add user message to history
+        messages.append({"role": "user", "content": user_input})
+
+        try:
+            response = run_agent_turn(messages)
+            print(f"\n{response}\n")
+
+            # Add assistant response to history
+            messages.append({"role": "assistant", "content": response})
+
+        except Exception as e:
+            print(f"\nError: {e}\n")
+            # Remove the failed user message to keep history clean
+            messages.pop()
