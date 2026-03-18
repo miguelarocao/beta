@@ -9,6 +9,7 @@ dependencies = [
     "google-auth>=2.0",
     "gspread>=6.0",
     "prompt-toolkit>=3.0.52",
+    "python-dotenv>=1.2.2",
     "vl-convert-python>=1.0",
 ]
 

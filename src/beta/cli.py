@@ -5,8 +5,12 @@ import sys
 
 import altair as alt
 import vl_convert as vlc
+from dotenv import load_dotenv
 
 from beta.display import imgcat
+
+# Load .env file (for ANTHROPIC_API_KEY, etc.)
+load_dotenv()
 
 
 def make_example_chart() -> alt.Chart:
@@ -82,6 +86,16 @@ def cmd_chat(_args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_query(args: argparse.Namespace) -> int:
+    """Run a single query and exit."""
+    from beta.agent import BetaAgent
+
+    agent = BetaAgent()
+    response = agent.send_message(args.query)
+    print(response)
+    return 0
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(
         prog="beta",
@@ -98,9 +112,14 @@ def main() -> int:
     import_parser.add_argument("-y", "--yes", action="store_true", help="Skip confirmation prompt")
     import_parser.set_defaults(func=cmd_import)
 
-    # beta chat (or just 'beta' with no args)
+    # beta chat
     chat_parser = subparsers.add_parser("chat", help="Start interactive chat session")
     chat_parser.set_defaults(func=cmd_chat)
+
+    # beta query "question"
+    query_parser = subparsers.add_parser("query", help="Run a single query and exit")
+    query_parser.add_argument("query", help="Query to run")
+    query_parser.set_defaults(func=cmd_query)
 
     args = parser.parse_args()
 
