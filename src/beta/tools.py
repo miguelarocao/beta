@@ -3,6 +3,9 @@
 import json
 import sqlite3
 from pathlib import Path
+import altair as alt
+import vl_convert as vlc
+from beta.display import imgcat
 
 DB_PATH = Path(__file__).parent.parent.parent / "data" / "climbing.db"
 
@@ -15,7 +18,7 @@ TOOLS = [
             "properties": {
                 "query": {
                     "type": "string",
-                    "description": "SQL SELECT query to execute",
+                    "description": "SQL query to execute",
                 },
             },
             "required": ["query"],
@@ -72,22 +75,14 @@ TOOLS = [
 
 def execute_tool(name: str, args: dict) -> str:
     """Execute a tool and return the result as a string."""
-    handlers = {
-        "sql": _handle_sql,
-        "create_chart": _handle_create_chart,
-        "clarify": _handle_clarify,
-    }
-
-    handler = handlers.get(name)
-    if not handler:
-        return f"Unknown tool: {name}"
-
-    return handler(args)
+    # TODO
+    raise NotImplementedError()
 
 
 def _handle_sql(args: dict) -> str:
     """Execute a read-only SQL query."""
     # Open database in read-only mode - writes will fail at the SQLite level
+    # TODO: should we only open this once?
     conn = sqlite3.connect(f"file:{DB_PATH}?mode=ro", uri=True)
     conn.row_factory = sqlite3.Row
 
@@ -103,9 +98,7 @@ def _handle_sql(args: dict) -> str:
 
 def _handle_create_chart(args: dict) -> str:
     """Create and display a chart."""
-    import altair as alt
-    import vl_convert as vlc
-    from beta.display import imgcat
+    # TODO: This is probably too limiting
 
     data = alt.Data(values=args["data"])
     chart_type = args["chart_type"]

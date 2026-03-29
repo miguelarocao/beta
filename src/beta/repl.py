@@ -4,7 +4,7 @@ from prompt_toolkit import prompt
 from prompt_toolkit.history import FileHistory
 from pathlib import Path
 
-from beta.agent import run_agent_turn
+from beta.agent import BetaAgent
 
 HISTORY_FILE = Path.home() / ".beta_history"
 
@@ -18,6 +18,8 @@ def run_repl() -> None:
     """Run the interactive REPL loop."""
     print(WELCOME)
 
+    agent = BetaAgent()
+
     # Conversation history persists across turns
     messages: list[dict] = []
 
@@ -26,7 +28,7 @@ def run_repl() -> None:
 
     while True:
         try:
-            user_input = prompt("β ", history=history).strip()
+            user_input = prompt("β> ", history=history).strip()
         except (KeyboardInterrupt, EOFError):
             # Ctrl+C or Ctrl+D
             print("\nGoodbye!")
@@ -42,8 +44,10 @@ def run_repl() -> None:
         # Add user message to history
         messages.append({"role": "user", "content": user_input})
 
+        # TODO: Add history limit and clear
+
         try:
-            response = run_agent_turn(messages)
+            response = agent.send_message(messages)
             print(f"\n{response}\n")
 
             # Add assistant response to history
@@ -52,4 +56,4 @@ def run_repl() -> None:
         except Exception as e:
             print(f"\nError: {e}\n")
             # Remove the failed user message to keep history clean
-            messages.pop()
+            # messages.pop()
