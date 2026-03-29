@@ -50,10 +50,8 @@ def run_repl() -> None:
             response = agent.send_message(messages)
             print(f"\n{response}\n")
 
-            # Add assistant response to history
-            messages.append({"role": "assistant", "content": response})
-
         except Exception as e:
             print(f"\nError: {e}\n")
             # Remove the failed user message to keep history clean
             # messages.pop()
+            # TODO: Review this

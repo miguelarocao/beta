@@ -75,9 +75,13 @@ TOOLS = [
 
 def execute_tool(name: str, args: dict) -> str:
     """Execute a tool and return the result as a string."""
-    # TODO
-    raise NotImplementedError()
-
+    tool = {
+        "sql": _handle_sql,
+        "create_chart": _handle_create_chart,
+        "clarify": _handle_clarify
+    }
+    fn = tool[name]
+    return fn(args)
 
 def _handle_sql(args: dict) -> str:
     """Execute a read-only SQL query."""
