@@ -3,7 +3,6 @@
 import json
 import sqlite3
 from pathlib import Path
-import altair as alt
 import vl_convert as vlc
 from beta.display import imgcat
 
@@ -27,34 +26,16 @@ TOOLS = [
     },
     {
         "name": "create_chart",
-        "description": "Create a chart visualization from data. This can only be called after the sql tool has been invoked to fetch data.",
+        "description": "Render a Vega-Lite chart. This can only be called after the sql tool has been invoked to fetch data. Pass a complete Vega-Lite spec including inline data values.",
         "input_schema": {
             "type": "object",
             "properties": {
-                "data": {
-                    "type": "array",
-                    "items": {"type": "object"},
-                    "description": "Array of data objects to visualize",
-                },
-                "chart_type": {
-                    "type": "string",
-                    "enum": ["bar", "line", "scatter", "area"],
-                    "description": "Type of chart to create",
-                },
-                "x": {
-                    "type": "string",
-                    "description": "Field to use for x-axis",
-                },
-                "y": {
-                    "type": "string",
-                    "description": "Field to use for y-axis",
-                },
-                "title": {
-                    "type": "string",
-                    "description": "Chart title",
+                "spec": {
+                    "type": "object",
+                    "description": "A complete Vega-Lite spec (https://vega.github.io/vega-lite/docs/). Must include '$schema', 'data' (with inline 'values'), and 'mark'/'encoding'.",
                 },
             },
-            "required": ["data", "chart_type", "x", "y"],
+            "required": ["spec"],
         },
     },
     {
@@ -105,32 +86,11 @@ def _handle_sql(args: dict) -> str:
 
 def _handle_create_chart(args: dict) -> str:
     """Create and display a chart."""
-    # TODO: This is probably too limiting
-
-    data = alt.Data(values=args["data"])
-    chart_type = args["chart_type"]
-
-    # TODO: Generate and accept vega-lite JSON
-
-    mark_map = {
-        "bar": alt.Chart(data).mark_bar(color="#e85d04"),
-        "line": alt.Chart(data).mark_line(color="#e85d04"),
-        "scatter": alt.Chart(data).mark_circle(color="#e85d04"),
-        "area": alt.Chart(data).mark_area(color="#e85d04"),
-    }
-
-    chart = mark_map[chart_type].encode(
-        x=alt.X(f"{args['x']}:N"),
-        y=alt.Y(f"{args['y']}:Q"),
-    ).properties(
-        title=args.get("title", ""),
-        width=800,
-        height=400,
-    )
-
-    png_data = vlc.vegalite_to_png(chart.to_dict())
-    imgcat(png_data)
-
+    try:
+        png_data = vlc.vegalite_to_png(args["spec"])
+        imgcat(png_data)
+    except Exception as e:
+        return f"Chart error: {e}"
     return "Chart displayed."
 
 
