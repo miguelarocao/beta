@@ -8,6 +8,7 @@ import vl_convert as vlc
 from beta.display import imgcat
 
 DB_PATH = Path(__file__).parent.parent.parent / "data" / "climbing.db"
+ROW_LIMIT = 50
 
 TOOLS = [
     {
@@ -26,7 +27,7 @@ TOOLS = [
     },
     {
         "name": "create_chart",
-        "description": "Create a chart visualization from data.",
+        "description": "Create a chart visualization from data. This can only be called after the sql tool has been invoked to fetch data.",
         "input_schema": {
             "type": "object",
             "properties": {
@@ -93,6 +94,8 @@ def _handle_sql(args: dict) -> str:
     try:
         cursor = conn.execute(args["query"])
         rows = [dict(row) for row in cursor.fetchall()]
+        if len(rows) > ROW_LIMIT:
+            return f"ERROR: Too much data requested from DB ({len(rows)} rows). Preventing response to avoid high token usage."
         return json.dumps(rows, indent=2)
     except sqlite3.Error as e:
         return f"SQL error: {e}"
@@ -106,6 +109,8 @@ def _handle_create_chart(args: dict) -> str:
 
     data = alt.Data(values=args["data"])
     chart_type = args["chart_type"]
+
+    # TODO: Generate and accept vega-lite JSON
 
     mark_map = {
         "bar": alt.Chart(data).mark_bar(color="#e85d04"),

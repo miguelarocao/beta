@@ -3,8 +3,9 @@
 from anthropic.types import MessageParam, TextBlock, ToolUseBlock
 
 from beta.tools import TOOLS, execute_tool
-from anthropic import Anthropic
+from anthropic import APIConnectionError, Anthropic, RateLimitError
 import os
+from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_exponential
 
 SYSTEM_PROMPT = """
 You are a helpful data analyst who helps the user answer questions about climbing data.
@@ -15,6 +16,20 @@ If you are unsure you should clarify with the user.
 class BetaAgent:
     def __init__(self):
         self.client = Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY"))
+
+    @retry(retry=retry_if_exception_type((RateLimitError, APIConnectionError)),
+            stop=stop_after_attempt(3),
+            wait=wait_exponential(multiplier=1, min=1, max=10),
+            reraise=True)
+    def call_with_retry(self, messages: list[MessageParam]):
+        return self.client.messages.create(
+                    system=SYSTEM_PROMPT,
+                    tools=TOOLS,
+                    max_tokens=1024,
+                    temperature = 0.1, # analytical
+                    messages=messages,
+                    model="claude-haiku-4-5",
+                )
 
     def send_message(self, messages: list[MessageParam]) -> str:
         """Run a single turn of the agent loop.
@@ -45,23 +60,16 @@ class BetaAgent:
         Returns:
             The agent's final text response for this turn.
         """
-        # TODO: Retries
-        # TODO: Handle timeouts, etc.
 
         while True:
-            response = self.client.messages.create(
-                system=SYSTEM_PROMPT,
-                tools=TOOLS,
-                max_tokens=1024,
-                temperature = 0.1, # analytical
-                messages=messages,
-                model="claude-haiku-4-5",
-                )
+            response = self.call_with_retry(messages)
             
             # Add assistant response to history
-            # Why?if you send a tool_result referencing a tool_use_id, that tool_use block must exist in the message history 
+            # Why? If you send a tool_result referencing a tool_use_id, that tool_use block must exist in the message history 
             # Otherwise you'll get validation error.
             messages.append({"role": "assistant", "content": response.content})
+
+            # TODO: Improvement: Don't send data to Claude. Instead only send rows and inject data into graph.
             
             if response.stop_reason == "tool_use":
                 tool_results = []

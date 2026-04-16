@@ -41,6 +41,12 @@ def run_repl() -> None:
             print("Goodbye!")
             break
 
+        if user_input.lower() == "clear":
+            # TODO: make it "visually" clear history, too
+            messages.clear()
+            print("Cleared message history")
+            continue
+
         # Add user message to history
         messages.append({"role": "user", "content": user_input})
 
