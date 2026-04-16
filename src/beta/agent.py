@@ -25,7 +25,7 @@ class BetaAgent:
         return self.client.messages.create(
                     system=SYSTEM_PROMPT,
                     tools=TOOLS,
-                    max_tokens=1024,
+                    max_tokens=2048,
                     temperature = 0.1, # analytical
                     messages=messages,
                     model="claude-haiku-4-5",

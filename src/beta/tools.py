@@ -7,7 +7,7 @@ import vl_convert as vlc
 from beta.display import imgcat
 
 DB_PATH = Path(__file__).parent.parent.parent / "data" / "climbing.db"
-ROW_LIMIT = 50
+ROW_LIMIT = 100
 
 TOOLS = [
     {
@@ -76,7 +76,9 @@ def _handle_sql(args: dict) -> str:
         cursor = conn.execute(args["query"])
         rows = [dict(row) for row in cursor.fetchall()]
         if len(rows) > ROW_LIMIT:
-            return f"ERROR: Too much data requested from DB ({len(rows)} rows). Preventing response to avoid high token usage."
+            error_message = f"ERROR: Too much data requested from DB ({len(rows)} rows, max is {ROW_LIMIT}). Preventing response to avoid high token usage."
+            print(error_message, f"\nQuery was: {args['query']}")
+            return error_message
         return json.dumps(rows, indent=2)
     except sqlite3.Error as e:
         return f"SQL error: {e}"
