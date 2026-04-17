@@ -39,7 +39,7 @@ def run_repl() -> None:
     """Run the interactive REPL loop."""
     _print_logo()
 
-    agent = BetaAgent()
+    agent = BetaAgent(console)
 
     # Conversation history persists across turns
     messages: list[dict] = []

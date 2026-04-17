@@ -14,8 +14,10 @@ If you are unsure you should clarify with the user.
 """.strip()
 
 class BetaAgent:
-    def __init__(self):
+    def __init__(self, console):
         self.client = Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY"))
+        self.console = console
+        self.max_turns = 5
 
     @retry(retry=retry_if_exception_type((RateLimitError, APIConnectionError)),
             stop=stop_after_attempt(3),
@@ -61,7 +63,9 @@ class BetaAgent:
             The agent's final text response for this turn.
         """
 
-        while True:
+        turn = 0
+        while turn < self.max_turns:
+            turn += 1
             response = self.call_with_retry(messages)
             
             # Add assistant response to history
@@ -75,7 +79,7 @@ class BetaAgent:
                 tool_results = []
                 for block in response.content:
                     if isinstance(block, TextBlock):
-                        print(block.text) # Let user know what's going on
+                        self.console.print(block.text) # Let user know what's going on
                     elif isinstance(block, ToolUseBlock):
                         result = execute_tool(block.name, block.input)
                         tool_results.append({
@@ -95,3 +99,5 @@ class BetaAgent:
             else:
                 # TODO: Handle more stop reasons?
                 raise ValueError(f"Unexpected stop reason: {response.stop_reason}")
+        
+        raise ValueError('Agent hit max turns!')
