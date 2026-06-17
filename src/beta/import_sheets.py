@@ -103,6 +103,25 @@ def parse_bool(val: str) -> int:
     return 1 if str(val).strip().upper() == "TRUE" else 0
 
 
+def parse_duration(val: str) -> int:
+    """Parse an "HH:MM" sheet time string into whole minutes.
+
+    The sheet stores every duration as "HH:MM" (e.g. "00:30" -> 30 minutes).
+    An empty/blank cell means the activity didn't happen -> 0 minutes. Anything
+    that isn't HH:MM raises, so a malformed or regressed cell fails loudly
+    instead of silently parsing to 0 (the bug this replaces).
+    """
+    val = (val or "").strip()
+    if not val:
+        return 0
+
+    parts = val.split(":")
+    if len(parts) != 2:
+        raise ValueError(f"Expected HH:MM duration, got {val!r}")
+    hours, minutes = (int(p) for p in parts)
+    return hours * 60 + minutes
+
+
 def fetch_climbs(client: gspread.Client) -> list[dict]:
     """Fetch and transform indoor climb data."""
     spreadsheet = client.open(SPREADSHEET_NAME)
@@ -161,20 +180,34 @@ def fetch_sessions(client: gspread.Client) -> list[dict]:
 
     rows = []
     for row in data[1:]:
-        if len(row) < 9 or not row[0].strip():
+        # Trailing empty cells may be trimmed by the sheet API, so we no longer
+        # require the full column count — just a date. Durations are parsed
+        # per-cell and total_time is derived below, so missing tail cells are 0.
+        if not row or not row[0].strip():
             continue
 
         date = parse_date(row[0])
+        warmup = parse_duration(row[2]) if len(row) > 2 else 0
+        climbing_time = parse_duration(row[3]) if len(row) > 3 else 0
+        conditioning = parse_duration(row[4]) if len(row) > 4 else 0
+        stretch = parse_duration(row[5]) if len(row) > 5 else 0
+        hang = parse_duration(row[6]) if len(row) > 6 else 0
+        other = parse_duration(row[7]) if len(row) > 7 else 0
+        # Derive total ourselves rather than trust the sheet's total column,
+        # which mistakenly excludes warmup. Warmup is part of a session, so we
+        # include it here.
+        total_time = warmup + climbing_time + conditioning + stretch + hang + other
+
         rows.append({
             "date": date,
             "workout_type": row[1].strip() if len(row) > 1 else None,
-            "warmup": parse_int(row[2]) if len(row) > 2 else 0,
-            "climbing_time": parse_int(row[3]) if len(row) > 3 else 0,
-            "conditioning": parse_int(row[4]) if len(row) > 4 else 0,
-            "stretch": parse_int(row[5]) if len(row) > 5 else 0,
-            "hang": parse_int(row[6]) if len(row) > 6 else 0,
-            "other": parse_int(row[7]) if len(row) > 7 else 0,
-            "total_time": parse_int(row[8]) if len(row) > 8 else 0,
+            "warmup": warmup,
+            "climbing_time": climbing_time,
+            "conditioning": conditioning,
+            "stretch": stretch,
+            "hang": hang,
+            "other": other,
+            "total_time": total_time,
         })
 
     return rows
