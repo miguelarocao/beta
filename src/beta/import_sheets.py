@@ -18,7 +18,11 @@ EXPECTED_SESSION_HEADERS = [
     "Date", "workout type", "warmup", "climbing time",
     "conditioning", "stretch", "hang", "other", "total time"
 ]
-EXPECTED_OUTDOOR_HEADERS = ["Climb name", "V Grade", "Style", "Date"]
+
+# Map crag-name variants from the sheet to a single canonical name.
+CRAG_ALIASES = {
+    "Shoreditch Boulder": "Shoreditch Park Boulder",
+}
 
 
 class HeaderMismatchError(Exception):
@@ -189,29 +193,35 @@ def fetch_outdoor(client: gspread.Client) -> list[dict]:
     if not data:
         return []
 
-    validate_headers(data[0], EXPECTED_OUTDOOR_HEADERS, "outdoor_climbs")
+    # Look up columns by header name: the sheet keeps extra legacy columns
+    # (Climb name, V Grade, Style) so we can't rely on position.
+    header = [h.strip() for h in data[0]]
+    try:
+        date_idx = header.index("Date")
+        crag_idx = header.index("Crag name")
+    except ValueError as e:
+        raise HeaderMismatchError(
+            f"outdoor_climbs: missing expected column {e}. Got headers {header}"
+        )
 
+    # Collapse to one row per date; each date maps to a single crag.
     rows = []
+    seen_dates = set()
     for row in data[1:]:
-        if len(row) < 4 or not row[0].strip():
+        if len(row) <= date_idx or not row[date_idx].strip():
             continue
 
-        name = row[0].strip()
-        v_grade_raw = row[1].strip()
-        style = row[2].strip() if len(row) > 2 else None
-        date = parse_date(row[3]) if len(row) > 3 else None
-
-        if not date:
+        date = parse_date(row[date_idx])
+        if date in seen_dates:
             continue
+        seen_dates.add(date)
 
-        v_grade = resolve_grade(v_grade_raw, date)
+        crag = row[crag_idx].strip() if len(row) > crag_idx else None
+        crag = CRAG_ALIASES.get(crag, crag)
 
         rows.append({
             "date": date,
-            "v_grade_raw": v_grade_raw,
-            "v_grade": v_grade,
-            "name": name,
-            "style": style,
+            "crag": crag,
         })
 
     return rows
@@ -245,8 +255,8 @@ def upsert_outdoor(conn: sqlite3.Connection, rows: list[dict]) -> int:
     """Insert outdoor climb rows."""
     conn.execute("DELETE FROM outdoor_climbs")
     conn.executemany(
-        """INSERT INTO outdoor_climbs (date, v_grade_raw, v_grade, name, style)
-           VALUES (:date, :v_grade_raw, :v_grade, :name, :style)""",
+        """INSERT INTO outdoor_climbs (date, crag)
+           VALUES (:date, :crag)""",
         rows,
     )
     return len(rows)

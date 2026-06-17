@@ -47,15 +47,11 @@ def init_db(db_path: Path | None = None) -> None:
         );
 
         CREATE TABLE outdoor_climbs (
-            date TEXT NOT NULL,
-            v_grade_raw TEXT NOT NULL,
-            v_grade INTEGER NOT NULL,
-            name TEXT,
-            style TEXT
+            date TEXT PRIMARY KEY,
+            crag TEXT
         );
 
         CREATE INDEX idx_climbs_date ON climbs(date);
-        CREATE INDEX idx_outdoor_climbs_date ON outdoor_climbs(date);
     """)
     conn.commit()
     conn.close()

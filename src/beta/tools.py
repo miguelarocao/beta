@@ -12,7 +12,7 @@ ROW_LIMIT = 100
 TOOLS = [
     {
         "name": "sql",
-        "description": "Run a read-only SQL query against the climbing database. Tables: climbs (date, v_grade_raw, v_grade, count, multiplier_attempts, sent), sessions (date, workout_type, warmup, climbing_time, conditioning, stretch, hang, other, total_time), outdoor_climbs (date, v_grade_raw, v_grade, name, style).",
+        "description": "Run a read-only SQL query against the climbing database. Tables: climbs (date, v_grade_raw, v_grade, count, multiplier_attempts, sent), sessions (date, workout_type, warmup, climbing_time, conditioning, stretch, hang, other, total_time), outdoor_climbs (date, crag).",
         "input_schema": {
             "type": "object",
             "properties": {
