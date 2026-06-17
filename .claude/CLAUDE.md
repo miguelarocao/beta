@@ -17,9 +17,11 @@ Single agent, raw Anthropic API (no framework).
 
 ## Data
 
-SQLite tables:
+SQLite tables — see [docs/database.md](../docs/database.md) for full column descriptions.
+
 - **climbs**: date, v_grade, count, multiplier_attempts, sent
 - **sessions**: date, workout_type, warmup, climbing_time, conditioning, stretch, hang, other, total_time
+- **outdoor_climbs**: date, crag
 
 ## Working Agreement
 
