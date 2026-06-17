@@ -1,3 +1,9 @@
 {
-  "includeCoAuthoredBy": false
+  "includeCoAuthoredBy": false,
+  "permissions": {
+    "deny": [
+      "Read(.env)",
+      "Read(service-account.json)"
+    ]
+  }
 }
